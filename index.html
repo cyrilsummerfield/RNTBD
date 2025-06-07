@@ -1,0 +1,188 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Game Scoring Sheet</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #e6ecf0;
+      margin: 1rem;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.5rem;
+    }
+    .score-sheet {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+    .character {
+      background: #ffffff;
+      border: 1px solid #bbb;
+      padding: 0.5rem;
+      border-radius: 8px;
+    }
+    .name {
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.85rem;
+    }
+    .symbol {
+      font-size: 1.2rem;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 0.25rem;
+    }
+    .lives {
+      width: 2rem;
+    }
+    .circle {
+      cursor: pointer;
+      font-size: 1.2rem;
+      margin: 2px;
+    }
+    .filled {
+      color: red;
+    }
+    button {
+      margin: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+    }
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      align-items: center;
+      margin: 1rem auto;
+    }
+    select {
+      margin: 0.25rem;
+      padding: 0.25rem;
+      font-size: 1rem;
+    }
+    .Field { background: #ff4d4d; }
+    .Weapons { background: #ff9999; }
+    .Fighter1 { background: #ffaa00; }
+    .Fighter2 { background: #ffff66; }
+    .Fighter3 { background: #66ff66; }
+    .Robots { background: #b3b3ff; }
+  </style>
+</head>
+<body>
+  <h1>Game Scoring Sheet</h1>
+  <div class="header">
+    <div>
+      Swap lives:
+      <select id="char1"></select>
+      ⇄
+      <select id="char2"></select>
+      <button onclick="swapLives()">Swap</button>
+    </div>
+    <button onclick="endRound()">End Round</button>
+  </div>
+  <div id="sheet" class="score-sheet"></div>
+
+  <script>
+    const characters = [
+      { name: 'Field Agent', lives: 5, symbol: '🎩', class: 'Field' },
+      { name: 'Weapons Distributor', lives: 5, symbol: '💣', class: 'Weapons' },
+      { name: 'Fighter #1', lives: 6, symbol: '1️⃣', class: 'Fighter1' },
+      { name: 'Fighter #2', lives: 6, symbol: '2️⃣', class: 'Fighter2' },
+      { name: 'Fighter #3', lives: 6, symbol: '3️⃣', class: 'Fighter3' },
+      { name: 'Robots', lives: 25, symbol: '🤖', class: 'Robots' },
+    ];
+
+    const sheetEl = document.getElementById('sheet');
+    const char1Select = document.getElementById('char1');
+    const char2Select = document.getElementById('char2');
+
+    const columns = characters.map((char, i) => {
+      const col = document.createElement('div');
+      col.className = `character ${char.class}`;
+      col.innerHTML = `<div class="name">${char.name} <span class="symbol">${char.symbol}</span></div>`;
+      sheetEl.appendChild(col);
+
+      if (char.name !== 'Robots') {
+        char1Select.add(new Option(char.name, i));
+        char2Select.add(new Option(char.name, i));
+      }
+
+      return col;
+    });
+
+    function drawRow(livesArray) {
+      livesArray.forEach((lives, i) => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        const label = document.createElement('div');
+        label.className = 'lives';
+        label.textContent = lives;
+        row.appendChild(label);
+
+        for (let j = 0; j < lives; j++) {
+          const circle = document.createElement('span');
+          circle.className = 'circle';
+          circle.innerHTML = '〇';
+          circle.addEventListener('click', () => {
+            circle.classList.toggle('filled');
+            circle.innerHTML = circle.classList.contains('filled') ? '⬤' : '〇';
+          });
+          row.appendChild(circle);
+        }
+
+        columns[i].appendChild(row);
+      });
+    }
+
+    function endRound() {
+      const newLives = columns.map(col => {
+        const rows = col.querySelectorAll('.row');
+        const lastRow = rows[rows.length - 1];
+        const filled = lastRow.querySelectorAll('.filled').length;
+        const current = parseInt(lastRow.querySelector('.lives').textContent);
+        return Math.max(current - filled, 0);
+      });
+      drawRow(newLives);
+    }
+
+    function swapLives() {
+      const i1 = parseInt(char1Select.value);
+      const i2 = parseInt(char2Select.value);
+      if (i1 === i2) return;
+
+      const rows1 = columns[i1].querySelectorAll('.row');
+      const rows2 = columns[i2].querySelectorAll('.row');
+      const last1 = rows1[rows1.length - 1];
+      const last2 = rows2[rows2.length - 1];
+
+      const clone1 = last1.cloneNode(true);
+      const clone2 = last2.cloneNode(true);
+
+      columns[i1].replaceChild(clone2, last1);
+      columns[i2].replaceChild(clone1, last2);
+
+      // Re-bind events
+      [clone1, clone2].forEach(row => {
+        row.querySelectorAll('.circle').forEach(circle => {
+          circle.addEventListener('click', () => {
+            circle.classList.toggle('filled');
+            circle.innerHTML = circle.classList.contains('filled') ? '⬤' : '〇';
+          });
+        });
+      });
+    }
+
+    drawRow(characters.map(c => c.lives));
+  </script>
+</body>
+</html>
